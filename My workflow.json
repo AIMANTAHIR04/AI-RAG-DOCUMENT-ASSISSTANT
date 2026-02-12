@@ -1,0 +1,349 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tell regarding the data in the pinecone according to the following input {{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=\"You are a helpful assistant. You have access to a tool called 'Pinecone Vector Store' which contains the user's uploaded documents. You MUST use this tool to search for context before answering any question. Do not answer from your own knowledge if the answer is in the document.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        960,
+        336
+      ],
+      "id": "e1f126c2-963b-4b23-9b8a-df3ccbb6ee19",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-3-8b-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        832,
+        544
+      ],
+      "id": "9b039fa2-f4ca-4cc4-b33e-26823e228d7b",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "7Rlb7IKOUZBtR3Cg",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "embed-english-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        784
+      ],
+      "id": "bfaafaaa-0a2f-49d5-afe6-e45be0a8cdd2",
+      "name": "Embeddings Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "jGcvb1zTKqQRb6ik",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "project1",
+          "mode": "list",
+          "cachedResultName": "project1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        288
+      ],
+      "id": "99bca8fc-a74b-4261-940f-989614470c38",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "HnI2wesCh9ipwCn2",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=retrieve",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "project1",
+          "mode": "list",
+          "cachedResultName": "project1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        576
+      ],
+      "id": "e062bb87-4e3e-423d-9d7a-d96f5620fa61",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "HnI2wesCh9ipwCn2",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "embed-english-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        560
+      ],
+      "id": "49e6cef2-d2e1-49ed-ad1f-dad1543c5789",
+      "name": "Embeddings Cohere1",
+      "credentials": {
+        "cohereApi": {
+          "id": "jGcvb1zTKqQRb6ik",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "pdfLoader",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        528
+      ],
+      "id": "c6557272-728b-4c64-b59c-c5e4a9b4757e",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "{{ $('When clicking Execute workflow').json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        544
+      ],
+      "id": "680f0e04-db05-4069-aa39-828e26d13bda",
+      "name": "Simple"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        352
+      ],
+      "id": "9e67ea8b-d9b4-41de-8095-70c8fe71c62e",
+      "name": "When chat message received",
+      "webhookId": "f8ffffb0-30e2-472a-8a84-b427401bf8a6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json[\"text\"];\nconst chunkSize = 500; // adjust as needed\nconst chunks = [];\nfor (let i = 0; i < text.length; i += chunkSize) {\n  chunks.push({\n    id: `chunk-${i/chunkSize}`,\n    text: text.slice(i, i + chunkSize)\n  });\n}\nreturn chunks.map(c => ({ json: c }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        224
+      ],
+      "id": "d7dc1be6-473e-4e68-a679-72cd113d8bde",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=data0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        256
+      ],
+      "id": "b8de226a-775b-4335-86aa-9e9f356abeed",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        16
+      ],
+      "id": "e378118b-0a34-434b-96a8-1b3ae8522452",
+      "name": "Webhook1",
+      "webhookId": "e6e5aa3b-3da0-49ea-884c-d119047eb0b3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        []
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Cohere": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [
+        []
+      ]
+    },
+    "Embeddings Cohere1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "85f3a14e-ccf6-4d73-a627-13473f7b8051",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54b10683fda4483b49b3dcf2a8c7a7a1479f94f42d8e8b62e5eb8d946551b3af"
+  },
+  "id": "YgBq3XEcT2vISLa-JsYFC",
+  "tags": []
+}
